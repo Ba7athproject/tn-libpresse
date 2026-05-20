@@ -24,7 +24,7 @@ Le jeu de données consolidé a été collecté et structuré par DW dans le cad
 
 L'interface, la logique de comparaison et l'expérience de navigation ont été élaborées par l'équipe du Projet Ba7ath.
 
-## Structure attendue
+## Structure 
 
 ```text
 .
@@ -33,40 +33,6 @@ L'interface, la logique de comparaison et l'expérience de navigation ont été 
 └── data/
     └── 2013-2026-with-secondary-data.csv
 ```
-
-Le fichier CSV doit être placé dans le dossier `data/` avec ce nom exact :
-
-```text
-data/2013-2026-with-secondary-data.csv
-```
-
-## Lancement en local
-
-Depuis le dossier du projet, lancer un serveur HTTP local :
-
-```bash
-py -m http.server 8080
-```
-
-Puis ouvrir dans le navigateur :
-
-```text
-http://localhost:8080
-```
-
-Ne pas ouvrir `index.html` directement en `file:///`, sinon le navigateur bloquera le chargement du CSV pour des raisons de sécurité.
-
-## Déploiement GitHub Pages
-
-Pour publier le projet en ligne :
-
-1. créer un dépôt GitHub public ;
-2. placer `index.html` à la racine du dépôt ;
-3. ajouter le dossier `data/` avec le fichier CSV ;
-4. pousser les fichiers sur la branche `main` ;
-5. activer GitHub Pages depuis **Settings > Pages** en choisissant la branche `main` et le dossier racine `/ (root)`.
-
-Une fois publié, le site pourra charger automatiquement le CSV via un chemin relatif.
 
 ## Technologies utilisées
 
