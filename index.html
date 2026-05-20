@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RSF Explorer — Tunisie 2013–2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    :root, [data-theme="light"] {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-2: #f0f3f9;
+      --surface-3: #e7ecf5;
+      --text: #162031;
+      --muted: #5f6b7d;
+      --border: rgba(20, 32, 49, 0.12);
+      --primary: #0e7490;
+      --primary-2: #155e75;
+      --accent: #0f766e;
+      --danger: #b91c1c;
+      --shadow: 0 8px 24px rgba(13, 22, 38, 0.08);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+    }
+    [data-theme="dark"] {
+      --bg: #0b1220;
+      --surface: #121a2b;
+      --surface-2: #172135;
+      --surface-3: #1d2940;
+      --text: #edf3ff;
+      --muted: #97a6bf;
+      --border: rgba(237, 243, 255, 0.12);
+      --primary: #38bdf8;
+      --primary-2: #0ea5e9;
+      --accent: #34d399;
+      --danger: #f87171;
+      --shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(56,189,248,.12), transparent 26%),
+        radial-gradient(circle at 0% 0%, rgba(52,211,153,.10), transparent 24%),
+        var(--bg);
+      color: var(--text);
+    }
+    button, input, select { font: inherit; }
+    .app {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: var(--space-6);
+      display: grid;
+      gap: var(--space-6);
+    }
+    .topbar {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: var(--space-6);
+      align-items: stretch;
+    }
+    .hero, .context, .card, .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)), var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      padding: var(--space-6);
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: var(--space-4);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      color: var(--primary);
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .brand svg { width: 28px; height: 28px; }
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 1.2rem + 2vw, 3.6rem);
+      line-height: 1.02;
+      max-width: 11ch;
+    }
+    .lede {
+      margin: 0;
+      color: var(--muted);
+      max-width: 70ch;
+      font-size: 1rem;
+    }
+    .context {
+      padding: var(--space-6);
+      display: grid;
+      gap: var(--space-4);
+      align-content: start;
+    }
+    .context-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-4);
+    }
+    .stat {
+      padding: var(--space-4);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .stat-label {
+      color: var(--muted);
+      font-size: .9rem;
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-size: clamp(1.4rem, 1rem + 1vw, 2.4rem);
+      font-weight: 800;
+      line-height: 1;
+    }
+    .workspace {
+      display: grid;
+      grid-template-columns: 340px minmax(0, 1fr);
+      gap: var(--space-6);
+      align-items: start;
+    }
+    .sidebar {
+      position: sticky;
+      top: 16px;
+      display: grid;
+      gap: var(--space-4);
+    }
+    .panel {
+      padding: var(--space-5);
+      display: grid;
+      gap: var(--space-4);
+    }
+    .panel h2, .section-title {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: .01em;
+    }
+    .muted { color: var(--muted); }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+    .btn:hover, .btn:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(56,189,248,.55);
+      outline: none;
+    }
+    .btn.active, .btn.primary {
+      background: linear-gradient(180deg, var(--primary), var(--primary-2));
+      color: white;
+      border-color: transparent;
+    }
+    .search {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      color: var(--text);
+    }
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      border-radius: 999px;
+      background: rgba(56,189,248,.12);
+      border: 1px solid rgba(56,189,248,.2);
+      color: var(--text);
+      padding: 7px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .92rem;
+    }
+    .chip button {
+      background: transparent;
+      border: 0;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0;
+    }
+    .country-list {
+      max-height: 340px;
+      overflow: auto;
+      display: grid;
+      gap: 6px;
+      padding-right: 4px;
+    }
+    .country-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: var(--surface-2);
+      border: 1px solid transparent;
+      transition: .18s ease;
+    }
+    .country-item:hover { border-color: var(--border); }
+    .country-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .country-item input { accent-color: var(--primary); }
+    .country-name { font-weight: 600; }
+    .country-meta { font-size: .85rem; color: var(--muted); }
+    .viz {
+      display: grid;
+      gap: var(--space-6);
+    }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--space-4);
+    }
+    .card {
+      padding: var(--space-5);
+      display: grid;
+      gap: 10px;
+      min-height: 140px;
+    }
+    .card .value {
+      font-size: clamp(1.8rem, 1.2rem + 1vw, 2.8rem);
+      font-weight: 800;
+      line-height: 1;
+    }
+    .chart-card { padding: var(--space-4); }
+    .chart-head {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-4);
+      align-items: start;
+      padding: 6px 6px 14px;
+    }
+    .chart-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .plot { width: 100%; height: 510px; }
+    .table-wrap { overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      white-space: nowrap;
+    }
+    th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--surface); }
+    .delta-up { color: var(--accent); font-weight: 700; }
+    .delta-down { color: var(--danger); font-weight: 700; }
+    .story {
+      display: grid;
+      gap: 10px;
+    }
+    .story button { text-align: left; border-radius: 16px; }
+    .footer-note {
+      color: var(--muted);
+      font-size: .92rem;
+      padding-bottom: 30px;
+    }
+    @media (max-width: 1180px) {
+      .topbar, .workspace { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 700px) {
+      .app { padding: var(--space-4); }
+      .context-grid, .kpis { grid-template-columns: 1fr; }
+      .plot { height: 420px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="topbar">
+      <div class="hero">
+        <div class="brand">
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" aria-label="logo">
+            <path d="M12 48c10-18 22-29 40-34"/>
+            <path d="M12 34h17"/>
+            <path d="M28 34c0 10-5 18-16 20"/>
+          </svg>
+          <span>RSF EXPLORER</span>
+        </div>
+        <div>
+          <h1>Tunisie 2013–2026 dans son contexte régional.</h1>
+          <p class="lede">Une interface pensée pour comparer l'état de la liberté de la presse entre la Tunisie et l’Afrique du Nord, le reste de l’Afrique et l’Europe, en alternant vue analytique, vue de synthèse et scénarios éditoriaux.</p>
+        </div>
+      </div>
+      <aside class="context">
+        <div class="toolbar" aria-label="actions globales">
+          <button class="btn" id="themeToggle">Mode clair/sombre</button>
+          <button class="btn" id="resetAll">Réinitialiser</button>
+          <button class="btn" id="showTunisiaOnly">Tunisie seule</button>
+        </div>
+        <div class="context-grid">
+          <div class="stat">
+            <div class="stat-label">Référence fixe</div>
+            <div class="stat-value">Tunisie</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Période</div>
+            <div class="stat-value">2013–2026</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Données attendues</div>
+            <div class="stat-value">CSV consolidé</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Déploiement</div>
+            <div class="stat-value">GitHub Pages</div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="workspace">
+      <aside class="sidebar">
+        <section class="panel">
+          <h2>Scénarios rapides</h2>
+          <div class="story">
+            <button class="btn" data-story="north-africa">Tunisie vs Afrique du Nord</button>
+            <button class="btn" data-story="africa-core">Tunisie vs Afrique — sélection utile</button>
+            <button class="btn" data-story="europe-core">Tunisie vs Europe — écart visuel</button>
+            <button class="btn" data-story="neighbors">Tunisie vs voisins immédiats</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Mode de comparaison</h2>
+          <div class="toolbar" id="metricSwitch">
+            <button class="btn active" data-metric="score">Score</button>
+            <button class="btn" data-metric="rank">Rang</button>
+            <button class="btn" data-metric="delta">Variation</button>
+          </div>
+          <div class="muted">Le score est le meilleur point d’entrée. Le rang aide à visualiser les basculements relatifs.</div>
+        </section>
+
+        <section class="panel">
+          <h2>Groupes</h2>
+          <div class="toolbar">
+            <button class="btn" data-group="north_africa">Afrique du Nord</button>
+            <button class="btn" data-group="africa">Afrique</button>
+            <button class="btn" data-group="europe">Europe</button>
+            <button class="btn" data-group="eu">UE</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Recherche pays</h2>
+          <input id="countrySearch" class="search" type="search" placeholder="Chercher un pays..." />
+          <div class="chip-row" id="selectedChips"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Pays</h2>
+          <div class="country-list" id="countryList"></div>
+        </section>
+      </aside>
+
+      <main class="viz">
+        <section class="kpis">
+          <article class="card">
+            <div class="muted">Rang Tunisie 2013 → 2026</div>
+            <div class="value" id="kpiRank">—</div>
+            <div class="muted" id="kpiRankDelta">—</div>
+          </article>
+          <article class="card">
+            <div class="muted">Score Tunisie 2013 → 2026</div>
+            <div class="value" id="kpiScore">—</div>
+            <div class="muted" id="kpiScoreDelta">—</div>
+          </article>
+          <article class="card">
+            <div class="muted">Pays actifs</div>
+            <div class="value" id="kpiCountries">—</div>
+            <div class="muted">Tunisie incluse automatiquement</div>
+          </article>
+          <article class="card">
+            <div class="muted">Lecture</div>
+            <div class="value" id="kpiMode">Score</div>
+            <div class="muted">Changer de métrique pour relire la période</div>
+          </article>
+        </section>
+
+        <section class="panel chart-card">
+          <div class="chart-head">
+            <div>
+              <h2 class="section-title">Série principale</h2>
+              <div class="muted" id="chartLead">Comparaison longitudinale de la Tunisie et des pays sélectionnés.</div>
+            </div>
+            <div class="chart-actions">
+              <button class="btn" id="focusTunisia">Mettre la Tunisie en avant</button>
+              <button class="btn" id="showAverage">Afficher moyenne sélection</button>
+            </div>
+          </div>
+          <div id="mainChart" class="plot"></div>
+        </section>
+
+        <section class="panel chart-card">
+          <div class="chart-head">
+            <div>
+              <h2 class="section-title">Bascule 2013 → 2026</h2>
+              <div class="muted">Slope chart pour voir les écarts de départ et d’arrivée.</div>
+            </div>
+          </div>
+          <div id="slopeChart" class="plot"></div>
+        </section>
+
+        <section class="panel chart-card">
+          <div class="chart-head">
+            <div>
+              <h2 class="section-title">Table d’inspection</h2>
+              <div class="muted">Vue synthétique pour repérer rapidement les gains et reculs.</div>
+            </div>
+          </div>
+          <div class="table-wrap" id="summaryTable"></div>
+        </section>
+      </main>
+    </section>
+
+    <div class="footer-note">Données basées sur les rapports de RSF (2013-2026) <code>Collectées par DW dans le cadre d'un article Data-Analytique</code> Publié sur GitHub. L'interface est élaborée par l'équipe du Projet Ba7ath</div>
+  </div>
+
+  <script>
+    const DATA_URL = './data/2013-2026-with-secondary-data.csv';
+    const TUNISIA_ALIASES = ['tunisia', 'tunisie'];
+    const NORTH_AFRICA = ['Algeria', 'Tunisia', 'Libya', 'Morocco', 'Egypt', 'Mauritania', 'Western Sahara'];
+    const EU = ['Austria','Belgium','Bulgaria','Croatia','Cyprus','Czechia','Czech Republic','Denmark','Estonia','Finland','France','Germany','Greece','Hungary','Ireland','Italy','Latvia','Lithuania','Luxembourg','Malta','Netherlands','Poland','Portugal','Romania','Slovakia','Slovenia','Spain','Sweden'];
+
+    let rows = [];
+    let countries = [];
+    let grouped = new Map();
+    let selected = new Set();
+    let metric = 'score';
+    let showAverage = false;
+    let emphasizeTunisia = false;
+
+    function normalize(v) {
+      return String(v ?? '').trim();
+    }
+
+    function slug(v) {
+      return normalize(v).toLowerCase();
+    }
+
+    function guess(obj, names) {
+      const keys = Object.keys(obj || {});
+      for (const name of names) {
+        const exact = keys.find(k => slug(k) === slug(name));
+        if (exact) return obj[exact];
+      }
+      for (const key of keys) {
+        const s = slug(key);
+        if (names.some(n => s.includes(slug(n)))) return obj[key];
+      }
+      return '';
+    }
+
+    function parseNumber(v) {
+      if (v === null || v === undefined || v === '') return null;
+      const n = Number(String(v).replace(',', '.').replace(/[^0-9.-]/g, ''));
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function mapRow(r) {
+      const country = normalize(guess(r, ['country', 'Country', 'country_name', 'Entity', 'Nation']));
+      const year = parseInt(guess(r, ['year', 'Year']), 10);
+      const score = parseNumber(guess(r, ['score', 'Score', 'global score', 'Overall score', 'RSF Score']));
+      const rank = parseNumber(guess(r, ['rank', 'Rank', 'position', 'Position', 'RSF Rank']));
+      const region = normalize(guess(r, ['region', 'Region', 'world_region', 'subregion', 'Subregion']));
+      const continent = normalize(guess(r, ['continent', 'Continent']));
+      return { ...r, country, year, score, rank, region, continent };
+    }
+
+    function isTunisia(name) {
+      return TUNISIA_ALIASES.includes(slug(name));
+    }
+
+    function countrySeries(country) {
+      return (grouped.get(country) || []).slice().sort((a, b) => a.year - b.year);
+    }
+
+    function firstLast(series) {
+      const clean = series.filter(d => d.year >= 2013 && d.year <= 2026);
+      return { first: clean[0] || null, last: clean[clean.length - 1] || null };
+    }
+
+    function metricValue(d) {
+      if (!d) return null;
+      if (metric === 'rank') return d.rank;
+      if (metric === 'delta') return null;
+      return d.score;
+    }
+
+    function getTunisiaName() {
+      return countries.find(isTunisia) || 'Tunisia';
+    }
+
+    function buildGroups() {
+      const g = { north_africa: [], africa: [], europe: [], eu: [] };
+      countries.forEach(country => {
+        const series = countrySeries(country);
+        const sample = series[0] || {};
+        const region = slug(sample.region);
+        const continent = slug(sample.continent);
+        if (NORTH_AFRICA.map(slug).includes(slug(country))) g.north_africa.push(country);
+        if (continent.includes('africa') || region.includes('africa')) g.africa.push(country);
+        if (continent.includes('europe') || region.includes('europe')) g.europe.push(country);
+        if (EU.map(slug).includes(slug(country))) g.eu.push(country);
+      });
+      return g;
+    }
+
+    function populateCountries(filter = '') {
+      const el = document.getElementById('countryList');
+      const q = slug(filter);
+      el.innerHTML = '';
+      countries
+        .filter(c => !isTunisia(c))
+        .filter(c => slug(c).includes(q))
+        .forEach(country => {
+          const s = countrySeries(country);
+          const meta = s[0] ? [s[0].region, s[0].continent].filter(Boolean).join(' · ') : '';
+          const row = document.createElement('label');
+          row.className = 'country-item';
+          row.innerHTML = `
+            <div class="country-main">
+              <input type="checkbox" ${selected.has(country) ? 'checked' : ''} data-country="${country}">
+              <div>
+                <div class="country-name">${country}</div>
+                <div class="country-meta">${meta || '—'}</div>
+              </div>
+            </div>
+          `;
+          el.appendChild(row);
+        });
+      el.querySelectorAll('input[data-country]').forEach(input => {
+        input.addEventListener('change', e => {
+          const c = e.target.getAttribute('data-country');
+          if (e.target.checked) selected.add(c); else selected.delete(c);
+          renderAll();
+        });
+      });
+    }
+
+    function renderChips() {
+      const host = document.getElementById('selectedChips');
+      host.innerHTML = '';
+      [...selected].sort().forEach(country => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.innerHTML = `<span>${country}</span><button type="button" data-remove="${country}">✕</button>`;
+        host.appendChild(chip);
+      });
+      host.querySelectorAll('button[data-remove]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selected.delete(btn.getAttribute('data-remove'));
+          renderAll();
+        });
+      });
+    }
+
+    function activeCountries() {
+      return [getTunisiaName(), ...[...selected].filter(c => !isTunisia(c))];
+    }
+
+    function renderKPIs() {
+      const series = countrySeries(getTunisiaName());
+      const { first, last } = firstLast(series);
+      const rankDelta = first && last && first.rank != null && last.rank != null ? last.rank - first.rank : null;
+      const scoreDelta = first && last && first.score != null && last.score != null ? +(last.score - first.score).toFixed(2) : null;
+      document.getElementById('kpiRank').textContent = first && last ? `${first.rank ?? '—'} → ${last.rank ?? '—'}` : '—';
+      document.getElementById('kpiScore').textContent = first && last ? `${first.score ?? '—'} → ${last.score ?? '—'}` : '—';
+      document.getElementById('kpiRankDelta').textContent = rankDelta == null ? '—' : `${rankDelta > 0 ? '+' : ''}${rankDelta} places`;
+      document.getElementById('kpiScoreDelta').textContent = scoreDelta == null ? '—' : `${scoreDelta > 0 ? '+' : ''}${scoreDelta} points`;
+      document.getElementById('kpiCountries').textContent = String(selected.size + 1);
+      document.getElementById('kpiMode').textContent = metric === 'score' ? 'Score' : metric === 'rank' ? 'Rang' : 'Variation';
+    }
+
+    function lineColor(country) {
+      if (isTunisia(country)) return '#f59e0b';
+      const palette = ['#38bdf8','#a78bfa','#34d399','#f472b6','#22c55e','#f87171','#60a5fa','#fb7185','#2dd4bf'];
+      const i = countries.indexOf(country);
+      return palette[i % palette.length];
+    }
+
+    function plotTheme() {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      return {
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        font: { color: dark ? '#edf3ff' : '#162031', family: 'Inter, sans-serif' },
+        xaxis: { gridcolor: dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)', zerolinecolor: 'transparent' },
+        yaxis: { gridcolor: dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)', zerolinecolor: 'transparent' },
+        margin: { l: 56, r: 28, t: 24, b: 48 },
+        legend: { orientation: 'h', y: 1.12, x: 0 }
+      };
+    }
+
+    function renderMainChart() {
+      const active = activeCountries();
+      const traces = active.map(country => {
+        const s = countrySeries(country).filter(d => d.year >= 2013 && d.year <= 2026);
+        const y = metric === 'rank' ? s.map(d => d.rank) : s.map(d => d.score);
+        return {
+          type: 'scatter',
+          mode: 'lines+markers',
+          name: country,
+          x: s.map(d => d.year),
+          y,
+          line: {
+            color: lineColor(country),
+            width: isTunisia(country) || emphasizeTunisia ? (isTunisia(country) ? 4 : 1.8) : 2.4,
+            dash: isTunisia(country) ? 'solid' : 'solid'
+          },
+          marker: { size: isTunisia(country) ? 8 : 6 },
+          opacity: emphasizeTunisia && !isTunisia(country) ? 0.25 : 1,
+          hovertemplate: `<b>${country}</b><br>Année: %{x}<br>${metric === 'rank' ? 'Rang' : 'Score'}: %{y}<extra></extra>`
+        };
+      });
+
+      if (showAverage && active.length > 1) {
+        const years = [...new Set(rows.map(r => r.year).filter(y => y >= 2013 && y <= 2026))].sort((a,b)=>a-b);
+        const avg = years.map(year => {
+          const vals = active.map(country => {
+            const d = countrySeries(country).find(r => r.year === year);
+            return metric === 'rank' ? d?.rank : d?.score;
+          }).filter(v => v != null);
+          if (!vals.length) return null;
+          return +(vals.reduce((a,b)=>a+b,0) / vals.length).toFixed(2);
+        });
+        traces.push({
+          type: 'scatter', mode: 'lines', name: 'Moyenne sélection', x: years, y: avg,
+          line: { color: '#e879f9', width: 3, dash: 'dot' }, hovertemplate: '<b>Moyenne sélection</b><br>Année: %{x}<br>Valeur: %{y}<extra></extra>'
+        });
+      }
+
+      const layout = {
+        ...plotTheme(),
+        yaxis: {
+          ...plotTheme().yaxis,
+          autorange: metric === 'rank' ? 'reversed' : true,
+          title: metric === 'rank' ? 'Rang mondial' : 'Score RSF'
+        },
+        xaxis: { ...plotTheme().xaxis, title: 'Année', dtick: 1 },
+      };
+      document.getElementById('chartLead').textContent = metric === 'rank'
+        ? 'Le rang est inversé visuellement : plus haut sur le graphe = meilleure position.'
+        : 'La Tunisie reste la série de référence. Les autres pays servent de contexte comparatif.';
+      Plotly.newPlot('mainChart', traces, layout, { responsive: true, displayModeBar: false });
+    }
+
+    function renderSlopeChart() {
+      const active = activeCountries();
+      const traces = [];
+      const annotations = [];
+      active.forEach(country => {
+        const { first, last } = firstLast(countrySeries(country));
+        if (!first || !last) return;
+        const v1 = metric === 'rank' ? first.rank : first.score;
+        const v2 = metric === 'rank' ? last.rank : last.score;
+        if (v1 == null || v2 == null) return;
+        traces.push({
+          type: 'scatter', mode: 'lines+markers+text', name: country,
+          x: [2013, 2026], y: [v1, v2],
+          text: ['', ''],
+          line: { color: lineColor(country), width: isTunisia(country) ? 4 : 2.2 },
+          marker: { size: isTunisia(country) ? 10 : 7 },
+          opacity: emphasizeTunisia && !isTunisia(country) ? 0.2 : 1,
+          hovertemplate: `<b>${country}</b><br>2013: ${v1}<br>2026: ${v2}<extra></extra>`
+        });
+        annotations.push(
+          { x: 2013, y: v1, text: country, showarrow: false, xanchor: 'right', xshift: -10, font: { color: lineColor(country), size: isTunisia(country) ? 14 : 11 } },
+          { x: 2026, y: v2, text: country, showarrow: false, xanchor: 'left', xshift: 10, font: { color: lineColor(country), size: isTunisia(country) ? 14 : 11 } }
+        );
+      });
+      const base = plotTheme();
+      Plotly.newPlot('slopeChart', traces, {
+        ...base,
+        showlegend: false,
+        xaxis: { ...base.xaxis, tickvals: [2013, 2026], range: [2011.5, 2027.5] },
+        yaxis: { ...base.yaxis, autorange: metric === 'rank' ? 'reversed' : true, title: metric === 'rank' ? 'Rang mondial' : 'Score RSF' },
+        annotations
+      }, { responsive: true, displayModeBar: false });
+    }
+
+    function renderTable() {
+      const active = activeCountries();
+      const rowsHtml = active.map(country => {
+        const { first, last } = firstLast(countrySeries(country));
+        if (!first || !last) return '';
+        const deltaRank = (first.rank != null && last.rank != null) ? last.rank - first.rank : null;
+        const deltaScore = (first.score != null && last.score != null) ? +(last.score - first.score).toFixed(2) : null;
+        const rankClass = deltaRank == null ? '' : (deltaRank <= 0 ? 'delta-up' : 'delta-down');
+        const scoreClass = deltaScore == null ? '' : (deltaScore >= 0 ? 'delta-up' : 'delta-down');
+        return `<tr>
+          <td><strong>${country}</strong></td>
+          <td>${first.rank ?? '—'}</td>
+          <td>${last.rank ?? '—'}</td>
+          <td class="${rankClass}">${deltaRank == null ? '—' : (deltaRank > 0 ? '+' : '') + deltaRank}</td>
+          <td>${first.score ?? '—'}</td>
+          <td>${last.score ?? '—'}</td>
+          <td class="${scoreClass}">${deltaScore == null ? '—' : (deltaScore > 0 ? '+' : '') + deltaScore}</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('summaryTable').innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Pays</th>
+              <th>Rang 2013</th>
+              <th>Rang 2026</th>
+              <th>Δ rang</th>
+              <th>Score 2013</th>
+              <th>Score 2026</th>
+              <th>Δ score</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      `;
+    }
+
+    function renderAll() {
+      populateCountries(document.getElementById('countrySearch').value || '');
+      renderChips();
+      renderKPIs();
+      renderMainChart();
+      renderSlopeChart();
+      renderTable();
+    }
+
+    function applyGroup(groupName) {
+      const groups = buildGroups();
+      (groups[groupName] || []).forEach(c => { if (!isTunisia(c)) selected.add(c); });
+      renderAll();
+    }
+
+    function applyStory(name) {
+      selected.clear();
+      const groups = buildGroups();
+      if (name === 'north-africa') groups.north_africa.forEach(c => !isTunisia(c) && selected.add(c));
+      if (name === 'africa-core') ['South Africa', 'Senegal', 'Nigeria', 'Egypt', 'Morocco', 'Algeria', 'Kenya', 'Ghana'].forEach(c => countries.includes(c) && !isTunisia(c) && selected.add(c));
+      if (name === 'europe-core') ['France', 'Germany', 'Italy', 'Spain', 'Sweden', 'Norway', 'Hungary', 'Greece'].forEach(c => countries.includes(c) && selected.add(c));
+      if (name === 'neighbors') ['Algeria', 'Libya', 'Morocco', 'Egypt'].forEach(c => countries.includes(c) && selected.add(c));
+      renderAll();
+    }
+
+    async function loadData() {
+      Papa.parse(DATA_URL, {
+        header: true,
+        download: true,
+        skipEmptyLines: true,
+        complete: ({ data }) => {
+          rows = data.map(mapRow).filter(r => r.country && Number.isFinite(r.year));
+          grouped = rows.reduce((m, row) => {
+            if (!m.has(row.country)) m.set(row.country, []);
+            m.get(row.country).push(row);
+            return m;
+          }, new Map());
+          countries = [...grouped.keys()].sort((a, b) => a.localeCompare(b));
+          renderAll();
+        },
+        error: err => {
+          document.querySelector('.footer-note').innerHTML = `Erreur de chargement du CSV: ${err}. Vérifie la présence du fichier <code>${DATA_URL}</code>.`;
+        }
+      });
+    }
+
+    document.getElementById('countrySearch').addEventListener('input', e => populateCountries(e.target.value));
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', current);
+      if (rows.length) renderAll();
+    });
+    document.getElementById('resetAll').addEventListener('click', () => { selected.clear(); metric = 'score'; showAverage = false; emphasizeTunisia = false; syncMetricButtons(); renderAll(); });
+    document.getElementById('showTunisiaOnly').addEventListener('click', () => { selected.clear(); renderAll(); });
+    document.getElementById('focusTunisia').addEventListener('click', () => { emphasizeTunisia = !emphasizeTunisia; renderAll(); });
+    document.getElementById('showAverage').addEventListener('click', () => { showAverage = !showAverage; renderAll(); });
+    document.querySelectorAll('[data-group]').forEach(btn => btn.addEventListener('click', () => applyGroup(btn.dataset.group)));
+    document.querySelectorAll('[data-story]').forEach(btn => btn.addEventListener('click', () => applyStory(btn.dataset.story)));
+    document.querySelectorAll('#metricSwitch [data-metric]').forEach(btn => btn.addEventListener('click', () => { metric = btn.dataset.metric; syncMetricButtons(); renderAll(); }));
+
+    function syncMetricButtons() {
+      document.querySelectorAll('#metricSwitch [data-metric]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.metric === metric);
+      });
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
