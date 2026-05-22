@@ -493,14 +493,37 @@
     }
 
     function mapRow(r) {
-      const country = normalize(guess(r, ['country', 'Country', 'country_name', 'Entity', 'Nation']));
-      const year = parseInt(guess(r, ['year', 'Year']), 10);
-      const score = parseNumber(guess(r, ['score', 'Score', 'global score', 'Overall score', 'RSF Score']));
-      const rank = parseNumber(guess(r, ['rank', 'Rank', 'position', 'Position', 'RSF Rank']));
-      const region = normalize(guess(r, ['region', 'Region', 'world_region', 'subregion', 'Subregion']));
-      const continent = normalize(guess(r, ['continent', 'Continent']));
-      return { ...r, country, year, score, rank, region, continent };
-    }
+  // Colonnes réelles du CSV DW/RSF
+  // Year (N), Rank N, Score, FR_country, EN_country, continent, region, subregion
+  const yearRaw = r['Year (N)'];
+  const rankRaw = r['Rank N'];
+  const scoreRaw = r['Score'];
+
+  const year = parseInt(yearRaw, 10);
+  const score = parseNumber(scoreRaw);
+  const rank = parseNumber(rankRaw);
+
+  // Priorité à EN_country, fallback sur FR_country
+  const country =
+    normalize(r['EN_country']) ||
+    normalize(r['FR_country']) ||
+    '';
+
+  const continent = normalize(r['continent']);
+  const region = normalize(r['region']);
+  const subregion = normalize(r['subregion']);
+
+  return {
+    ...r,
+    country,
+    year,
+    score,
+    rank,
+    continent,
+    region,
+    subregion
+  };
+}
 
     function isTunisia(name) {
       return TUNISIA_ALIASES.includes(slug(name));
